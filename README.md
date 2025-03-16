@@ -1,1 +1,0 @@
-# TechnoOlimp2025
