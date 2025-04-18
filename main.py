@@ -34,6 +34,10 @@ bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 
 
+class Form_waiting_for_test(StatesGroup):
+    waiting_for_test = State()
+    
+    
 class Form_waiting_for_lesson(StatesGroup):
     waiting_for_lesson = State()
     
@@ -65,6 +69,11 @@ def create_main_menu():
         InlineKeyboardButton(text="Мой прогресс", callback_data="progress"),
         
         InlineKeyboardButton(text="Уроки", callback_data="lessons"),
+        
+        InlineKeyboardButton(text="Тесты к урокам", callback_data="tests_lesson"),
+
+        
+        
         InlineKeyboardButton(text="Просмотр истории", callback_data="view_history"),
 
       
@@ -411,6 +420,104 @@ async def handle_selected_lesson(callback: CallbackQuery, state: FSMContext):
 @dp.callback_query(F.data == "back_to_lessons")
 async def handle_back_to_lessons(callback: CallbackQuery, state: FSMContext):
     await handle_lessons(callback, state)  # Повторно вызываем обработчик уроков
+
+
+
+
+# Обработчик для кнопки "Тесты к урокам"
+@dp.callback_query(F.data == "tests_lesson")
+async def handle_tests_lessons(callback: CallbackQuery, state: FSMContext):
+    # Получаем список уроков с тестами
+    lessons = get_available_tests()
+    
+    if not lessons:
+        await callback.message.edit_text("В базе нет доступных тестов.")
+        return
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+    
+    # Создаем кнопки для каждого урока с тестами
+    for lesson in lessons:
+        button_text = f"{lesson}"
+        callback_data = f"test_lesson_{lesson.split()[0]}"  # "test_lesson_1"
+        
+        keyboard.inline_keyboard.append(
+            [InlineKeyboardButton(text=button_text, callback_data=callback_data)]
+        )
+    
+    # Добавляем кнопку "Назад"
+    keyboard.inline_keyboard.append(
+        [InlineKeyboardButton(text="Назад", callback_data="back_to_main")]
+    )
+    
+    await callback.message.edit_text(
+        "Выберите урок для прохождения тестов:",
+        reply_markup=keyboard
+    )
+    await state.set_state(Form_waiting_for_test.waiting_for_test_selection)
+
+
+
+
+
+# Обработчик для конкретного урока с тестами
+@dp.callback_query(F.data.startswith("test_lesson_"))
+async def handle_specific_lesson_test(callback: CallbackQuery, state: FSMContext):
+    lesson_num = callback.data.split("_")[-1]  # Извлекаем номер урока
+    lesson_number = f"{lesson_num} урок"
+    
+    # Получаем данные теста для этого урока
+    test_data = get_lesson_test_data(lesson_number)
+    
+    if not test_data:
+        await callback.message.edit_text(f"Тесты для урока {lesson_number} не найдены.")
+        return
+    
+    # Сохраняем данные теста в state
+    await state.update_data(
+        current_test=test_data,
+        current_question_index=0,
+        score=0
+    )
+    
+    # Получаем первый вопрос
+    first_question = test_data['questions'][0]
+    question_text = format_question(first_question, question_num=1, total=len(test_data['questions']))
+    
+    # Создаем клавиатуру с вариантами ответов
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+    for option in first_question['options']:
+        keyboard.inline_keyboard.append(
+            [InlineKeyboardButton(
+                text=f"{option}: {first_question['options'][option]}",
+                callback_data=f"answer_{option}"
+            )]
+        )
+    
+    # Добавляем кнопку "Отмена"
+    keyboard.inline_keyboard.append(
+        [InlineKeyboardButton(text="Отмена", callback_data="cancel_test")]
+    )
+    
+    await callback.message.edit_text(
+        question_text,
+        reply_markup=keyboard
+    )
+    await state.set_state(Form_waiting_for_test.test_in_progress)
+
+# Вспомогательная функция для форматирования вопроса
+def format_question(question_data, question_num: int, total: int) -> str:
+    """Форматирует текст вопроса с номером и вариантами ответов"""
+    options_text = "\n".join(
+        f"{option}: {text}" 
+        for option, text in question_data['options'].items()
+    )
+    return (
+        f"Вопрос {question_num}/{total}:\n\n"
+        f"{question_data['question']}\n\n"
+        f"Варианты ответов:\n"
+        f"{options_text}"
+    )
 
 
 

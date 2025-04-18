@@ -29,6 +29,9 @@ collection_questions = db["questions"]  # Коллекция для хранен
 collection_users = db["users"]   # регистрация пользователей в mini app
 
 collection_lessons = db["lessons"] # Уроки
+collection_questions_for_lessons = db["questions_for_lessons"]
+
+
 
 
 def get_current_time() -> str:
@@ -348,4 +351,47 @@ def get_lesson_by_number(number):
         return lesson
     except Exception as e:
         print(f"Error getting lesson: {e}")
+        return None
+    
+    
+    
+def get_available_tests():
+    """
+    Получает список уникальных номеров уроков (number_lesson), для которых есть тесты
+    Возвращает список вида ["1 урок", "2 урок", ...] или None при ошибке
+    """
+    
+    try:
+        # Используем distinct для получения уникальных значений number_lesson
+        available_lessons = collection_questions_for_lessons.distinct("number_lesson")
+        
+        if not available_lessons:
+            print("В базе нет тестов ни для одного урока")
+            return None
+            
+        print(f"Найдены тесты для уроков: {available_lessons}")
+        return available_lessons
+    
+    except Exception as e:
+        print(f"Ошибка при получении списка уроков: {e}")
+        return None
+    
+    
+
+# Функция для получения полных данных теста по номеру урока
+def get_lesson_test_data(lesson_number: str):
+    """
+    Получает полные данные теста для конкретного урока
+    
+    
+    """
+    try:
+        test_data = collection_questions_for_lessons.find_one(
+            {"number_lesson": lesson_number},
+            {"_id": 0}  # Исключаем поле _id из результатов
+        )
+        return test_data
+    
+    except Exception as e:
+        print(f"Ошибка при получении теста для урока {lesson_number}: {e}")
         return None
