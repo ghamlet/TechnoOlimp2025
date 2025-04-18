@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Главное меню</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            color: var(--tg-theme-text-color);
+            background: var(--tg-theme-bg-color);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .active {
+            display: block;
+        }
+
+        .btn {
+            background: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            width: 100%;
+            cursor: pointer;
+            text-align: center;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        .btn-secondary {
+            background: var(--tg-theme-secondary-bg-color);
+            color: var(--tg-theme-text-color);
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: var(--tg-theme-text-color);
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid var(--tg-theme-secondary-bg-color);
+            background: var(--tg-theme-secondary-bg-color);
+            color: var(--tg-theme-text-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- Экран регистрации -->
+        <div id="register-screen" class="screen">
+            <h2>Завершите регистрацию</h2>
+            <input type="text" id="full-name" placeholder="Ваше полное имя">
+            <input type="email" id="email" placeholder="Ваш email">
+            <button class="btn" id="complete-registration">Завершить</button>
+        </div>
+
+        <!-- Главное меню -->
+        <div id="main-menu" class="screen">
+            <h2>Главное меню</h2>
+            <button class="btn" id="test-prompts-btn">Тестирование промтов</button>
+            <button class="btn" id="examples-btn">Примеры промтов</button>
+            <button class="btn" id="take-test-btn">Пройти тест</button>
+            <button class="btn" id="progress-btn">Мой прогресс</button>
+            <button class="btn" id="history-btn">Просмотр истории</button>
+            <button class="btn btn-secondary" id="back-btn">Назад</button>
+        </div>
+
+    </div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+
+
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Получаем параметры из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('user_id');
+        const isExistingUser = urlParams.get('existing') === 'true';
+
+        // Элементы интерфейса
+        const registerScreen = document.getElementById('register-screen');
+        const mainMenu = document.getElementById('main-menu');
+
+
+        // Функция показа главного меню
+        function showMainMenu() {
+            registerScreen.classList.remove('active');
+            mainMenu.classList.add('active'); }
+
+
+
+        // Показываем соответствующий экран
+        if (isExistingUser) {
+            showMainMenu();
+        } else {
+            registerScreen.classList.add('active');
+        }
+
+
+
+        // Обработчик завершения регистрации
+        document.getElementById('complete-registration').addEventListener('click', () => {
+            const fullName = document.getElementById('full-name').value;
+            const email = document.getElementById('email').value;
+            
+            if (!fullName || !email) {
+                alert('Пожалуйста, заполните все поля');
+                return;
+            }
+
+            // Формируем данные для отправки
+            const registrationData = {
+                type: "registration",
+                user_id: userId,
+                full_name: fullName,
+                email: email          
+            };
+
+            // Отправляем данные регистрации в бота
+            tg.sendData(JSON.stringify(registrationData)); // после этой хуйни mini app закрывается
+            tg.close()
+
+            // Показываем главное меню
+            // showMainMenu();
+        });
+
+
+
+        // Обработчики кнопок главного меню
+        document.getElementById('test-prompts-btn').addEventListener('click', () => {
+            sendAction('test_prompts');
+        });
+
+        document.getElementById('examples-btn').addEventListener('click', () => {
+            sendAction('examples');
+        });
+
+        document.getElementById('take-test-btn').addEventListener('click', () => {
+            sendAction('take_test');
+        });
+
+        document.getElementById('progress-btn').addEventListener('click', () => {
+            sendAction('progress');
+        });
+
+        document.getElementById('history-btn').addEventListener('click', () => {
+            sendAction('view_history');
+        });
+
+        document.getElementById('back-btn').addEventListener('click', () => {
+            tg.close();
+        });
+
+
+
+        
+
+            
+
+                function updateUI(response) {
+            // Clear the current content
+            document.getElementById('content').innerHTML = response;
+        }
+
+
+                function sendAction(actionType) {
+            const data = {
+                type: actionType,
+                user_id: userId
+            };
+            
+                    // Call this function in your event listener after sending data
+        tg.sendData(JSON.stringify(data)).then(response => {
+            updateUI(response); });
+
+            // tg.sendData(JSON.stringify(data));
+        }
+
+
+    </script>
+    
+</body>
+</html>
