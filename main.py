@@ -52,6 +52,11 @@ class Form_waiting_for_topic(StatesGroup):
 # Определяем состояния теста
 class TestStates(StatesGroup):
     taking_test = State()
+    
+    
+class TestStates2(StatesGroup):
+    waiting_for_test_selection = State()
+    test_in_progress = State()
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -436,16 +441,14 @@ async def handle_tests_lessons(callback: CallbackQuery, state: FSMContext):
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[])
     
-    # Создаем кнопки для каждого урока с тестами
     for lesson in lessons:
-        button_text = f"{lesson}"
+        button_text = f"Тесты к {lesson}"
         callback_data = f"test_lesson_{lesson.split()[0]}"  # "test_lesson_1"
         
         keyboard.inline_keyboard.append(
             [InlineKeyboardButton(text=button_text, callback_data=callback_data)]
         )
     
-    # Добавляем кнопку "Назад"
     keyboard.inline_keyboard.append(
         [InlineKeyboardButton(text="Назад", callback_data="back_to_main")]
     )
@@ -454,37 +457,32 @@ async def handle_tests_lessons(callback: CallbackQuery, state: FSMContext):
         "Выберите урок для прохождения тестов:",
         reply_markup=keyboard
     )
-    await state.set_state(Form_waiting_for_test.waiting_for_test_selection)
-
-
+    await state.set_state(TestStates2.waiting_for_test_selection)
 
 
 
 # Обработчик для конкретного урока с тестами
 @dp.callback_query(F.data.startswith("test_lesson_"))
 async def handle_specific_lesson_test(callback: CallbackQuery, state: FSMContext):
-    lesson_num = callback.data.split("_")[-1]  # Извлекаем номер урока
+    lesson_num = callback.data.split("_")[-1]
     lesson_number = f"{lesson_num} урок"
     
-    # Получаем данные теста для этого урока
     test_data = get_lesson_test_data(lesson_number)
     
     if not test_data:
         await callback.message.edit_text(f"Тесты для урока {lesson_number} не найдены.")
         return
     
-    # Сохраняем данные теста в state
     await state.update_data(
         current_test=test_data,
         current_question_index=0,
-        score=0
+        score=0,
+        total_questions=len(test_data['questions'])
     )
     
-    # Получаем первый вопрос
     first_question = test_data['questions'][0]
     question_text = format_question(first_question, question_num=1, total=len(test_data['questions']))
     
-    # Создаем клавиатуру с вариантами ответов
     keyboard = InlineKeyboardMarkup(inline_keyboard=[])
     for option in first_question['options']:
         keyboard.inline_keyboard.append(
@@ -494,7 +492,6 @@ async def handle_specific_lesson_test(callback: CallbackQuery, state: FSMContext
             )]
         )
     
-    # Добавляем кнопку "Отмена"
     keyboard.inline_keyboard.append(
         [InlineKeyboardButton(text="Отмена", callback_data="cancel_test")]
     )
@@ -503,7 +500,9 @@ async def handle_specific_lesson_test(callback: CallbackQuery, state: FSMContext
         question_text,
         reply_markup=keyboard
     )
-    await state.set_state(Form_waiting_for_test.test_in_progress)
+    await state.set_state(TestStates2.test_in_progress)
+
+
 
 # Вспомогательная функция для форматирования вопроса
 def format_question(question_data, question_num: int, total: int) -> str:
@@ -518,6 +517,71 @@ def format_question(question_data, question_num: int, total: int) -> str:
         f"Варианты ответов:\n"
         f"{options_text}"
     )
+
+
+
+@dp.callback_query(F.data.startswith("answer_"), TestStates2.test_in_progress)
+async def handle_answer(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    current_question_index = data["current_question_index"]
+    test_data = data["current_test"]
+    total_questions = data["total_questions"]
+    
+    selected_option = callback.data.split("_")[-1]
+    current_question = test_data['questions'][current_question_index]
+    
+    # Проверяем ответ
+    if selected_option == current_question['correct_answer']:
+        await callback.answer("Правильно! ✅")
+        await state.update_data(score=data["score"] + 1)
+    else:
+        await callback.answer(f"Неправильно! ❌ Правильный ответ: {current_question['correct_answer']}")
+    
+    # Переходим к следующему вопросу или завершаем тест
+    next_question_index = current_question_index + 1
+    if next_question_index < total_questions:
+        next_question = test_data['questions'][next_question_index]
+        question_text = format_question(
+            next_question,
+            question_num=next_question_index+1,
+            total=total_questions
+        )
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+        for option in next_question['options']:
+            keyboard.inline_keyboard.append(
+                [InlineKeyboardButton(
+                    text=f"{option}: {next_question['options'][option]}",
+                    callback_data=f"answer_{option}"
+                )]
+            )
+        
+        await callback.message.edit_text(
+            question_text,
+            reply_markup=keyboard
+        )
+        await state.update_data(current_question_index=next_question_index)
+    else:
+        score = (await state.get_data()).get("score", 0)
+        
+        
+        result_message = (
+            f"Тест завершен!\n\n"
+            f"Ваш результат: {score}/{total_questions}\n"
+            f"Процент правильных ответов: {int(score/total_questions*100)}%"
+                        )
+         
+          # Очищаем состояние
+        await state.clear()
+         
+        await callback.message.edit_text(
+        result_message,
+        reply_markup=create_main_menu() )
+         
+        
+       
+    
+    
 
 
 
