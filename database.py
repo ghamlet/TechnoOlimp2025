@@ -330,11 +330,10 @@ def register_user(user_id: int, username: str, first_name: str, last_name: str =
 
 
 # Получает уроки из базы
-async def get_lessons():
+def get_lessons():
     try:
         # Подключение к коллекции lessons
-        lessons = await collection_lessons.distinct("number") 
-        print(lessons)
+        lessons =  collection_lessons.find() 
                 
         return lessons
     
@@ -343,9 +342,9 @@ async def get_lessons():
         return None
     
     
-async def get_lesson_by_number(number):
+def get_lesson_by_number(number):
     try:
-        lesson = await collection_lessons.find_one({"number": {"$regex": f"^{number}"}})
+        lesson =  collection_lessons.find_one({"number": {"$regex": f"^{number}"}})
         return lesson
     except Exception as e:
         print(f"Error getting lesson: {e}")

@@ -331,7 +331,7 @@ async def handle_prompt_analysis(message: types.Message, state: FSMContext):
 @dp.callback_query(F.data == "lessons")
 async def handle_lessons(callback: CallbackQuery, state: FSMContext):
     # Получаем список уроков из базы данных
-    lessons = await get_lessons()  # Предполагается, что у вас есть функция get_lessons()
+    lessons =  get_lessons()  
     
     if lessons:
         # Создаем клавиатуру с уроками
@@ -364,12 +364,23 @@ async def handle_lessons(callback: CallbackQuery, state: FSMContext):
 
 
 
+# Обработчик кнопки "Назад"
+@dp.callback_query(F.data == "back_to_main")
+async def handle_back_to_main(callback: CallbackQuery, state: FSMContext):
+    await state.clear()  # Очищаем состояние
+    await callback.message.edit_text(
+        "✨ Выберите действие: ✨",
+        reply_markup=create_main_menu()
+    )
+    
+
+
 @dp.callback_query(F.data.startswith("lesson_"))
 async def handle_selected_lesson(callback: CallbackQuery, state: FSMContext):
     lesson_number = callback.data.split("_")[1]  # Получаем "1" из "lesson_1"
     
     # Получаем урок из базы данных
-    lesson = await get_lesson_by_number(lesson_number)
+    lesson = get_lesson_by_number(lesson_number)
     
     if lesson:
         # Формируем сообщение с информацией об уроке
@@ -391,6 +402,15 @@ async def handle_selected_lesson(callback: CallbackQuery, state: FSMContext):
         )
     else:
         await callback.message.edit_text("Урок не найден.")
+
+
+
+# Обработчик кнопки "Назад" для возврата к списку уроков
+@dp.callback_query(F.data == "back_to_lessons")
+async def handle_back_to_lessons(callback: CallbackQuery, state: FSMContext):
+    await handle_lessons(callback, state)  # Повторно вызываем обработчик уроков
+
+
 
 
 # Обработка callback-запроса "Примеры промтов"
