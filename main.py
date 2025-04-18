@@ -63,9 +63,10 @@ def create_main_menu():
         InlineKeyboardButton(text="Примеры промтов", callback_data="examples"),
         InlineKeyboardButton(text="Пройти тест", callback_data="take_test"),
         InlineKeyboardButton(text="Мой прогресс", callback_data="progress"),
-        InlineKeyboardButton(text="Просмотр истории", callback_data="view_history"),
         
         InlineKeyboardButton(text="Уроки", callback_data="lessons"),
+        InlineKeyboardButton(text="Просмотр истории", callback_data="view_history"),
+
       
     )
     builder.adjust(2)  # Расположение кнопок (2 кнопки в строке)
@@ -387,7 +388,8 @@ async def handle_selected_lesson(callback: CallbackQuery, state: FSMContext):
         message_text = (
             f"<b>{lesson['number']}: {lesson['title']}</b>\n\n"
             f"<b>Описание:</b> {lesson['description']}\n\n"
-            f"<b>О курсе:</b> {lesson['about']}"
+            f"<b>О курсе:</b> {lesson['about']}\n\n"    
+            f"<b>Теоретическая часть:</b>\n{lesson.get('theory', 'Теоретический материал отсутствует')}"
         )
         
         # Создаем клавиатуру с кнопкой "Назад"
