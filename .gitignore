@@ -3,3 +3,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Игнорировать всю папку private-data
+/private-data/
+
+# Но разрешить README.md
+!/private-data/README.md
