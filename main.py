@@ -27,7 +27,7 @@ load_dotenv()
 
 # Получение токена бота из переменных окружения
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-WEB_APP_URL = "https://sajt-dmtr317744.amvera.io"
+WEB_APP_URL = os.getenv("WEB_APP_URL")
 
 # Инициализация бота и диспетчера
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
