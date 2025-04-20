@@ -96,14 +96,6 @@ async def handle_web_app_data(message: types.Message):
         if data["type"] == "registration":
             save_user_progress(int(data["user_id"]))
 
-
-
-
-
-            await message.answer(
-        "Данные получены!",
-        reply_markup=ReplyKeyboardRemove()  ) # Убирает клавиатуру
-            
             
             await message.answer(
                 "✨ Выберите действие: ✨",
