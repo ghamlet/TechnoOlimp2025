@@ -79,10 +79,8 @@ def create_main_menu():
 
         
         
-        InlineKeyboardButton(text="Просмотр истории", callback_data="view_history"),
-
-      
-    )
+        InlineKeyboardButton(text="Просмотр истории", callback_data="view_history"),)
+    
     builder.adjust(2)  # Расположение кнопок (2 кнопки в строке)
     return builder.as_markup()
 
