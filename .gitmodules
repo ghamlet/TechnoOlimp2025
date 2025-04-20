@@ -1,0 +1,3 @@
+[submodule "tg_mini_app"]
+	path = tg_mini_app
+	url = https://git.amvera.ru/dmtr317744/sajt
